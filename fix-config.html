@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>一键修复配置</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; margin-bottom: 10px; }
+    .subtitle { color: #666; margin-bottom: 30px; }
+    button {
+      background: #3370ff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover { background: #2b5dd4; }
+    button.success { background: #00b42a; }
+    button.danger { background: #f53f3f; }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .result.success {
+      background: #e8f5e9;
+      border: 1px solid #00b42a;
+      color: #00b42a;
+    }
+    .result.error {
+      background: #ffebee;
+      border: 1px solid #f53f3f;
+      color: #f53f3f;
+    }
+    .result.info {
+      background: #e3f2fd;
+      border: 1px solid #3370ff;
+      color: #1976d2;
+    }
+    .step {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f7f8fa;
+      border-radius: 4px;
+      border-left: 4px solid #3370ff;
+    }
+    .highlight {
+      background: #fff3cd;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 一键修复配置</h1>
+    <p class="subtitle">自动将 API 地址修改为代理服务器地址</p>
+    
+    <div class="step">
+      <h3>步骤 1：检查当前配置</h3>
+      <button onclick="checkConfig()">检查配置</button>
+      <div id="checkResult"></div>
+    </div>
+    
+    <div class="step">
+      <h3>步骤 2：修复配置</h3>
+      <p>将 API 地址改为：<code class="highlight">http://localhost:3001</code></p>
+      <button onclick="fixConfig()" class="success">一键修复</button>
+      <div id="fixResult"></div>
+    </div>
+    
+    <div class="step">
+      <h3>步骤 3：测试代理服务器</h3>
+      <button onclick="testProxy()">测试连接</button>
+      <div id="testResult"></div>
+    </div>
+    
+    <div class="step">
+      <h3>步骤 4：完成</h3>
+      <p>修复成功后：</p>
+      <ol>
+        <li>刷新飞书插件页面（<code>http://localhost:3000</code>）</li>
+        <li>点击 <span class="highlight">开始数据拉取</span></li>
+        <li>查看代理服务器终端日志</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    function checkConfig() {
+      const result = document.getElementById('checkResult');
+      const config = localStorage.getItem('syncPluginConfig');
+      
+      if (!config) {
+        result.innerHTML = '<div class="result error">❌ 未找到配置！\n\n请先在插件中保存一次配置。</div>';
+        return;
+      }
+      
+      try {
+        const parsed = JSON.parse(config);
+        const apiUrl = parsed.apiUrl || '未设置';
+        
+        let html = '<div class="result info">';
+        html += '当前配置：\n\n';
+        html += 'API 地址：' + apiUrl + '\n';
+        html += 'Authorization：' + (parsed.authHeader ? '已设置' : '未设置') + '\n';
+        html += '查询列名：' + (parsed.queryColumn || '未设置') + '\n\n';
+        
+        if (apiUrl === 'http://localhost:3001') {
+          html += '✅ API 地址已正确配置为代理服务器！';
+        } else {
+          html += '⚠️ API 地址需要修改为：http://localhost:3001';
+        }
+        
+        html += '</div>';
+        result.innerHTML = html;
+      } catch (error) {
+        result.innerHTML = '<div class="result error">❌ 配置解析失败：' + error.message + '</div>';
+      }
+    }
+    
+    function fixConfig() {
+      const result = document.getElementById('fixResult');
+      
+      try {
+        // 获取现有配置
+        let config = {};
+        const saved = localStorage.getItem('syncPluginConfig');
+        if (saved) {
+          config = JSON.parse(saved);
+        }
+        
+        // 修改 API 地址
+        const oldUrl = config.apiUrl || '未设置';
+        config.apiUrl = 'http://localhost:3001';
+        
+        // 确保 authHeader 存在
+        if (!config.authHeader) {
+          config.authHeader = 'Basic dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ==';
+        }
+        
+        // 保存配置
+        localStorage.setItem('syncPluginConfig', JSON.stringify(config));
+        
+        result.innerHTML = `
+          <div class="result success">
+✅ 配置修复成功！
+
+修改内容：
+  旧地址：${oldUrl}
+  新地址：http://localhost:3001
+
+下一步：
+  1. 刷新插件页面
+  2. 点击"开始数据拉取"
+          </div>
+        `;
+        
+        // 自动检查配置
+        setTimeout(() => {
+          checkConfig();
+        }, 500);
+      } catch (error) {
+        result.innerHTML = '<div class="result error">❌ 修复失败：' + error.message + '</div>';
+      }
+    }
+    
+    async function testProxy() {
+      const result = document.getElementById('testResult');
+      result.innerHTML = '<div class="result info">⏳ 测试中...</div>';
+      
+      try {
+        const response = await fetch('http://localhost:3001', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(["99.30176.1.1.7.1.1.1.1.666666"])
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          result.innerHTML = `
+            <div class="result success">
+✅ 代理服务器工作正常！
+
+响应状态：${response.status} OK
+响应数据：
+${JSON.stringify(data, null, 2)}
+
+代理服务器已就绪，可以开始数据拉取！
+            </div>
+          `;
+        } else {
+          result.innerHTML = `
+            <div class="result error">
+❌ 代理服务器响应错误
+
+状态码：${response.status}
+状态文本：${response.statusText}
+            </div>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `
+          <div class="result error">
+❌ 无法连接到代理服务器！
+
+错误：${error.message}
+
+请检查：
+1. 代理服务器是否正在运行？
+   运行命令：npm run proxy
+
+2. 端口 3001 是否被占用？
+   检查命令：netstat -ano | findstr :3001
+
+3. 防火墙是否阻止了连接？
+          </div>
+        `;
+      }
+    }
+    
+    // 页面加载时自动检查
+    window.onload = function() {
+      checkConfig();
+    };
+  </script>
+</body>
+</html>

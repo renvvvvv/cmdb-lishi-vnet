@@ -1,0 +1,18 @@
+{
+  "name": "feishu-data-sync-plugin",
+  "version": "1.0.0",
+  "description": "飞书多维表格数据同步插件",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "proxy": "node proxy-server.js"
+  },
+  "dependencies": {
+    "@lark-base-open/js-sdk": "^0.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

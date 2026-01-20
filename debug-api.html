@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 调试工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #333; }
+    button {
+      background: #3370ff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { background: #2b5dd4; }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f7f8fa;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success { border-left: 4px solid #00b42a; }
+    .error { border-left: 4px solid #f53f3f; }
+    .info { border-left: 4px solid #3370ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 API 调试工具</h1>
+    
+    <h3>测试步骤：</h3>
+    <button onclick="test1()">1. 测试基本连接</button>
+    <button onclick="test2()">2. 测试 CORS</button>
+    <button onclick="test3()">3. 测试完整请求</button>
+    <button onclick="test4()">4. 测试 Fetch API</button>
+    <button onclick="clearResults()">清除结果</button>
+    
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const API_URL = 'https://digitaltwin.meta42.indc.vnet.com/openapi/device_twin/reported/list';
+    const AUTH_HEADER = 'Basic dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ==';
+    
+    function log(message, type = 'info') {
+      const results = document.getElementById('results');
+      const div = document.createElement('div');
+      div.className = `result ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      results.appendChild(div);
+      results.scrollTop = results.scrollHeight;
+    }
+    
+    function clearResults() {
+      document.getElementById('results').innerHTML = '';
+    }
+    
+    // 测试 1: 基本连接
+    async function test1() {
+      log('测试 1: 检查 API 地址是否可访问...', 'info');
+      try {
+        const response = await fetch(API_URL, {
+          method: 'OPTIONS'
+        });
+        log(`OPTIONS 请求成功: ${response.status}`, 'success');
+      } catch (error) {
+        log(`OPTIONS 请求失败: ${error.message}`, 'error');
+      }
+    }
+    
+    // 测试 2: CORS 测试
+    async function test2() {
+      log('测试 2: 检查 CORS 配置...', 'info');
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify([])
+        });
+        log(`CORS 测试: ${response.status} - ${response.statusText}`, 'success');
+      } catch (error) {
+        log(`CORS 测试失败: ${error.message}`, 'error');
+        log('可能原因: 服务器未配置 CORS 或不允许跨域请求', 'error');
+      }
+    }
+    
+    // 测试 3: 完整请求
+    async function test3() {
+      log('测试 3: 发送完整 API 请求...', 'info');
+      const testData = ["99.30176.1.1.7.1.1.1.1.666666"];
+      
+      log(`请求 URL: ${API_URL}`, 'info');
+      log(`请求方法: POST`, 'info');
+      log(`Authorization: ${AUTH_HEADER}`, 'info');
+      log(`请求数据: ${JSON.stringify(testData)}`, 'info');
+      
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': AUTH_HEADER
+          },
+          body: JSON.stringify(testData)
+        });
+        
+        log(`响应状态: ${response.status} ${response.statusText}`, 'success');
+        
+        const data = await response.json();
+        log(`响应数据: ${JSON.stringify(data, null, 2)}`, 'success');
+      } catch (error) {
+        log(`请求失败: ${error.message}`, 'error');
+        log(`错误类型: ${error.name}`, 'error');
+        
+        if (error.message === 'Failed to fetch') {
+          log('诊断建议:', 'error');
+          log('1. 检查网络连接是否正常', 'error');
+          log('2. 检查 API 地址是否正确', 'error');
+          log('3. 服务器可能不支持跨域请求（CORS）', 'error');
+          log('4. 可能需要在服务器端配置 CORS 头', 'error');
+          log('5. 尝试使用代理服务器或后端转发请求', 'error');
+        }
+      }
+    }
+    
+    // 测试 4: Fetch API 详细信息
+    async function test4() {
+      log('测试 4: 检查 Fetch API 支持...', 'info');
+      
+      if (typeof fetch === 'undefined') {
+        log('浏览器不支持 Fetch API', 'error');
+        return;
+      }
+      
+      log('Fetch API 支持: ✓', 'success');
+      log(`当前页面协议: ${window.location.protocol}`, 'info');
+      log(`目标 API 协议: https:`, 'info');
+      
+      // 检查是否是混合内容
+      if (window.location.protocol === 'http:' && API_URL.startsWith('https:')) {
+        log('警告: 从 HTTP 页面请求 HTTPS 资源可能被浏览器阻止', 'error');
+      }
+      
+      // 尝试使用 XMLHttpRequest
+      log('尝试使用 XMLHttpRequest...', 'info');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', API_URL, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Authorization', AUTH_HEADER);
+      
+      xhr.onload = function() {
+        log(`XHR 成功: ${xhr.status} ${xhr.statusText}`, 'success');
+        log(`XHR 响应: ${xhr.responseText}`, 'success');
+      };
+      
+      xhr.onerror = function() {
+        log('XHR 失败: 网络错误或 CORS 问题', 'error');
+      };
+      
+      xhr.send(JSON.stringify(["99.30176.1.1.7.1.1.1.1.666666"]));
+    }
+  </script>
+</body>
+</html>

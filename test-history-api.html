@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>历史数据 API 测试工具</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #1f2329;
+      margin-bottom: 24px;
+      font-size: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #646a73;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dee0e3;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #3370ff;
+    }
+
+    textarea {
+      font-family: 'Courier New', monospace;
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    button {
+      background: #3370ff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 8px;
+    }
+
+    button:hover {
+      background: #2b5dd4;
+    }
+
+    button:disabled {
+      background: #c9cdd4;
+      cursor: not-allowed;
+    }
+
+    .result-box {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f7f8fa;
+      border-radius: 4px;
+      border: 1px solid #dee0e3;
+    }
+
+    .result-box h3 {
+      margin-bottom: 12px;
+      color: #1f2329;
+      font-size: 16px;
+    }
+
+    pre {
+      background: #1f2329;
+      color: #00ff00;
+      padding: 16px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .status.success {
+      background: #e8ffea;
+      color: #00b42a;
+    }
+
+    .status.error {
+      background: #ffece8;
+      color: #f53f3f;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #86909c;
+      margin-top: 4px;
+    }
+
+    .quick-time {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .quick-time button {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #f2f3f5;
+      color: #4e5969;
+    }
+
+    .quick-time button:hover {
+      background: #e5e6eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 历史数据 API 测试工具</h1>
+
+    <div class="form-group">
+      <label>API 地址</label>
+      <select id="apiUrl">
+        <option value="http://localhost:3001">代理服务器 (推荐)</option>
+        <option value="https://digitaltwin.meta42.indc.vnet.com/openapi">外网直连</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Authorization Header</label>
+      <input type="text" id="authHeader" value="Basic dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ==">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>开始时间</label>
+        <input type="datetime-local" id="startTime">
+        <div class="quick-time">
+          <button onclick="setTimeRange(1)">最近1小时</button>
+          <button onclick="setTimeRange(24)">最近24小时</button>
+          <button onclick="setTimeRange(168)">最近7天</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>结束时间</label>
+        <input type="datetime-local" id="endTime">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>时间间隔（秒）</label>
+        <input type="number" id="interval" value="3600" min="1">
+        <div class="hint">数据采样间隔</div>
+      </div>
+      <div class="form-group">
+        <label>聚合函数</label>
+        <select id="aggregationFunction">
+          <option value="">无</option>
+          <option value="avg">平均值 (avg)</option>
+          <option value="sum">求和 (sum)</option>
+          <option value="max">最大值 (max)</option>
+          <option value="min">最小值 (min)</option>
+          <option value="count">计数 (count)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>测点列表（每行一个）</label>
+      <textarea id="pointList" placeholder="29.125073.1.1.8.1.1.1.2.1&#10;5.5.1.2.2.1.1.1.5.1">29.125073.1.1.8.1.1.1.2.1</textarea>
+      <div class="hint">每行输入一个测点ID</div>
+    </div>
+
+    <button onclick="testAPI()">🚀 发送请求</button>
+    <button onclick="clearResult()">🗑️ 清空结果</button>
+
+    <div id="result" class="result-box" style="display: none;">
+      <h3>响应结果</h3>
+      <div id="status"></div>
+      <pre id="response"></pre>
+    </div>
+  </div>
+
+  <script>
+    // 设置默认时间（最近1小时）
+    function setTimeRange(hours) {
+      const now = new Date();
+      const past = new Date(now.getTime() - hours * 3600000);
+      
+      document.getElementById('startTime').value = formatDateTimeLocal(past);
+      document.getElementById('endTime').value = formatDateTimeLocal(now);
+    }
+
+    function formatDateTimeLocal(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    async function testAPI() {
+      const apiUrl = document.getElementById('apiUrl').value;
+      const authHeader = document.getElementById('authHeader').value;
+      const startTime = new Date(document.getElementById('startTime').value).getTime();
+      const endTime = new Date(document.getElementById('endTime').value).getTime();
+      const interval = document.getElementById('interval').value;
+      const aggregationFunction = document.getElementById('aggregationFunction').value;
+      const pointListText = document.getElementById('pointList').value;
+      
+      // 解析测点列表
+      const pointList = pointListText.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+      if (pointList.length === 0) {
+        alert('请输入至少一个测点ID');
+        return;
+      }
+
+      if (!startTime || !endTime) {
+        alert('请选择时间范围');
+        return;
+      }
+
+      const requestBody = {
+        startTime,
+        endTime,
+        interval,
+        function: aggregationFunction,
+        pointList
+      };
+
+      const resultDiv = document.getElementById('result');
+      const statusDiv = document.getElementById('status');
+      const responseDiv = document.getElementById('response');
+
+      resultDiv.style.display = 'block';
+      statusDiv.innerHTML = '<span class="status">请求中...</span>';
+      responseDiv.textContent = '正在发送请求...';
+
+      try {
+        const endpoint = apiUrl.includes('localhost') 
+          ? '/tsdb/point_data/v2/search'
+          : '/openapi/tsdb/point_data/v2/search';
+
+        console.log('请求配置:', {
+          url: apiUrl + endpoint,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader
+          },
+          body: requestBody
+        });
+
+        const response = await fetch(apiUrl + endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          statusDiv.innerHTML = `<span class="status success">✓ 请求成功 (${response.status})</span>`;
+          responseDiv.textContent = JSON.stringify(data, null, 2);
+          
+          // 统计数据点
+          let totalPoints = 0;
+          if (data.data) {
+            // 处理包装格式 {code, msg, success, data}
+            for (const key in data.data) {
+              const pointData = data.data[key];
+              if (Array.isArray(pointData)) {
+                totalPoints += pointData.length;
+              }
+            }
+            statusDiv.innerHTML += `<div style="margin-top: 8px; color: #4e5969;">共返回 ${totalPoints} 个数据点</div>`;
+            
+            // 显示消息
+            if (data.msg) {
+              statusDiv.innerHTML += `<div style="margin-top: 4px; color: #86909c; font-size: 12px;">${data.msg}</div>`;
+            }
+          } else {
+            // 处理直接格式 {测点ID: [...]}
+            for (const key in data) {
+              if (Array.isArray(data[key])) {
+                totalPoints += data[key].length;
+              }
+            }
+            statusDiv.innerHTML += `<div style="margin-top: 8px; color: #4e5969;">共返回 ${totalPoints} 个数据点</div>`;
+          }
+        } else {
+          statusDiv.innerHTML = `<span class="status error">✗ 请求失败 (${response.status})</span>`;
+          responseDiv.textContent = JSON.stringify(data, null, 2);
+        }
+      } catch (error) {
+        statusDiv.innerHTML = '<span class="status error">✗ 请求失败</span>';
+        responseDiv.textContent = `错误: ${error.message}\n\n可能原因:\n1. 代理服务器未启动\n2. 网络连接问题\n3. CORS 跨域限制`;
+        console.error('请求失败:', error);
+      }
+    }
+
+    function clearResult() {
+      document.getElementById('result').style.display = 'none';
+    }
+
+    // 页面加载时设置默认时间
+    window.onload = function() {
+      setTimeRange(1);
+    };
+  </script>
+</body>
+</html>

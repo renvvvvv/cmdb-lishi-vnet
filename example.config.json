@@ -1,0 +1,53 @@
+{
+  "name": "飞书数据同步插件配置示例",
+  "version": "1.0.0",
+  "environments": {
+    "development": {
+      "apiUrl": "https://digitaltwin.meta42.indc.vnet.com/openapi",
+      "username": "technique_center",
+      "password": "21Vianet@Vnet.com",
+      "timeout": 30000,
+      "batchSize": 50,
+      "delayBetweenRequests": 100
+    },
+    "production": {
+      "apiUrl": "https://digitaltwin.meta42.indc.vnet.com/openapi",
+      "username": "technique_center",
+      "password": "21Vianet@Vnet.com",
+      "timeout": 30000,
+      "batchSize": 50,
+      "delayBetweenRequests": 100
+    }
+  },
+  "feishu": {
+    "appId": "your_app_id_here",
+    "appSecret": "your_app_secret_here",
+    "baseUrl": "https://open.feishu.cn/open-apis"
+  },
+  "tableConfig": {
+    "queryColumnName": "查询id",
+    "outputColumns": {
+      "value": "reported_value",
+      "timestamp": "reported_timestamp",
+      "formattedTime": "formatted_time"
+    }
+  },
+  "features": {
+    "autoCreateColumns": true,
+    "validateDeviceId": true,
+    "showFormattedTime": true,
+    "enableBatchQuery": true,
+    "logLevel": "info"
+  },
+  "hosts": {
+    "internal": {
+      "domain": "gateway.meta42.indc.vnet.com",
+      "ip": "192.168.233.91",
+      "requiresHostsFile": true
+    },
+    "external": {
+      "domain": "digitaltwin.meta42.indc.vnet.com",
+      "requiresHostsFile": false
+    }
+  }
+}

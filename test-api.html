@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API 测试工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #666;
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    textarea {
+      min-height: 100px;
+      font-family: monospace;
+    }
+    button {
+      background: #3370ff;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #2b5dd4;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f7f8fa;
+      border-radius: 4px;
+      display: none;
+    }
+    .result.show {
+      display: block;
+    }
+    .result.success {
+      border-left: 4px solid #00b42a;
+    }
+    .result.error {
+      border-left: 4px solid #f53f3f;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .status.success {
+      color: #00b42a;
+    }
+    .status.error {
+      color: #f53f3f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 API 测试工具</h1>
+    
+    <div class="form-group">
+      <label>API 地址</label>
+      <input type="text" id="apiUrl" value="http://localhost:3001">
+    </div>
+    
+    <div class="form-group">
+      <label>用户名</label>
+      <input type="text" id="username" value="technique_center">
+    </div>
+    
+    <div class="form-group">
+      <label>密码</label>
+      <input type="password" id="password" value="21Vianet@Vnet.com">
+    </div>
+    
+    <div class="form-group">
+      <label>设备 ID 列表（JSON 数组格式）</label>
+      <textarea id="deviceIds">["99.30176.1.1.7.1.1.1.1.666666", "5.5.1.2.2.1.1.1.5.1"]</textarea>
+    </div>
+    
+    <button onclick="testAPI()">测试 API</button>
+    <button onclick="clearResult()">清除结果</button>
+    
+    <div id="result" class="result">
+      <div class="status" id="status"></div>
+      <div id="response"></div>
+    </div>
+  </div>
+
+  <script>
+    async function testAPI() {
+      const resultDiv = document.getElementById('result');
+      const statusDiv = document.getElementById('status');
+      const responseDiv = document.getElementById('response');
+      const button = event.target;
+      
+      button.disabled = true;
+      button.textContent = '测试中...';
+      
+      try {
+        const apiUrl = document.getElementById('apiUrl').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const deviceIdsText = document.getElementById('deviceIds').value;
+        
+        // 解析设备 ID
+        let deviceIds;
+        try {
+          deviceIds = JSON.parse(deviceIdsText);
+        } catch (e) {
+          throw new Error('设备 ID 格式错误，请使用 JSON 数组格式');
+        }
+        
+        // 生成 Basic Auth
+        const auth = btoa(`${username}:${password}`);
+        
+        // 发送请求
+        const startTime = Date.now();
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${auth}`
+          },
+          body: JSON.stringify(deviceIds)
+        });
+        
+        const duration = Date.now() - startTime;
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // 显示成功结果
+        resultDiv.className = 'result show success';
+        statusDiv.className = 'status success';
+        statusDiv.textContent = `✓ 请求成功 (${duration}ms)`;
+        
+        responseDiv.innerHTML = `
+          <h3>响应数据：</h3>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+          <h3>请求详情：</h3>
+          <pre>${JSON.stringify({
+            url: apiUrl,
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Basic dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ=='
+            },
+            body: deviceIds
+          }, null, 2)}</pre>
+        `;
+        
+      } catch (error) {
+        // 显示错误结果
+        resultDiv.className = 'result show error';
+        statusDiv.className = 'status error';
+        statusDiv.textContent = '✗ 请求失败';
+        
+        responseDiv.innerHTML = `
+          <h3>错误信息：</h3>
+          <pre>${error.message}</pre>
+          <h3>可能的原因：</h3>
+          <ul>
+            <li>网络连接问题</li>
+            <li>API 地址不正确</li>
+            <li>认证信息错误</li>
+            <li>需要配置 hosts 文件（内网环境）</li>
+            <li>CORS 跨域问题</li>
+          </ul>
+        `;
+      } finally {
+        button.disabled = false;
+        button.textContent = '测试 API';
+      }
+    }
+    
+    function clearResult() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = 'result';
+    }
+  </script>
+</body>
+</html>

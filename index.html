@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>历史数据查询插件</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="container">
+      <h2>历史数据查询配置</h2>
+      
+      <!-- 数据源表格配置 -->
+      <div class="section">
+        <h3>数据源表格（读取测点ID）</h3>
+        <div class="info-row" style="background: #f7f8fa; padding: 8px; border-radius: 4px; margin-bottom: 12px;">
+          <span style="color: #00b42a; font-weight: 500;">✓ 默认使用当前表格</span>
+        </div>
+        <details style="margin-top: 8px;">
+          <summary style="cursor: pointer; color: #3370ff; font-size: 13px;">高级：指定其他表格作为数据源</summary>
+          <div style="margin-top: 12px;">
+            <div class="form-group">
+              <label for="sourceTableUrl">数据源表格链接（可选）:</label>
+              <input type="text" id="sourceTableUrl" placeholder="留空则使用当前表格">
+              <small class="hint">从此表格读取测点ID</small>
+            </div>
+            <div class="info-row">
+              <label>表格类型：</label>
+              <span id="sourceTableType" class="info-text">当前表格</span>
+            </div>
+            <div class="info-row">
+              <label>表格 ID：</label>
+              <span id="sourceTableId" class="info-text">-</span>
+            </div>
+            <button id="testSourceConnection" class="btn" style="background: #3370ff; color: white; margin-top: 8px;">测试连接数据源表格</button>
+          </div>
+        </details>
+      </div>
+
+      <!-- 目标表格配置 -->
+      <div class="section">
+        <h3>目标表格（写入查询结果）⭐</h3>
+        <div class="form-group">
+          <label for="targetTableUrl">目标表格链接（必填）:</label>
+          <input type="text" id="targetTableUrl" placeholder="粘贴目标表格的完整URL" required>
+          <small class="hint">将查询结果写入此表格</small>
+        </div>
+        <div class="info-row">
+          <label>表格类型：</label>
+          <span id="targetTableType" class="info-text">未配置</span>
+        </div>
+        <div class="info-row">
+          <label>表格 ID：</label>
+          <span id="targetTableId" class="info-text">-</span>
+        </div>
+        <button id="testTargetConnection" class="btn" style="background: #00b42a; color: white; margin-top: 8px;">测试连接目标表格</button>
+      </div>
+
+      <!-- 机器人配置 -->
+      <div class="section">
+        <h3>飞书机器人配置</h3>
+        <div class="form-group">
+          <label for="appId">App ID:</label>
+          <input type="text" id="appId" value="cli_a8495c3aba10d00b">
+          <small class="hint">默认已配置，如需修改请输入新的App ID</small>
+        </div>
+        <div class="form-group">
+          <label for="appSecret">App Secret:</label>
+          <input type="password" id="appSecret" value="2jyb2v28yXHPeKW2IuIqPlwyigTP66uq">
+          <small class="hint">默认已配置，如需修改请输入新的App Secret</small>
+        </div>
+      </div>
+
+      <!-- 历史数据查询配置 -->
+      <div class="section">
+        <h3>历史数据查询配置</h3>
+        <div class="form-group">
+          <label for="queryColumn">测点列名:</label>
+          <input type="text" id="queryColumn" value="测点" placeholder="测点">
+          <small class="hint">当前表格中包含测点ID的列名（默认：测点）</small>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startTime">开始时间:</label>
+            <input type="datetime-local" id="startTime" required>
+          </div>
+          <div class="form-group">
+            <label for="endTime">结束时间:</label>
+            <input type="datetime-local" id="endTime" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="interval">时间间隔（秒）:</label>
+            <input type="number" id="interval" value="3600" min="1" placeholder="3600">
+            <small class="hint">数据采样间隔（默认：3600秒=1小时）</small>
+          </div>
+          <div class="form-group">
+            <label for="aggregationFunction">聚合函数:</label>
+            <select id="aggregationFunction">
+              <option value="">无</option>
+              <option value="avg">平均值 (avg)</option>
+              <option value="sum">求和 (sum)</option>
+              <option value="max">最大值 (max)</option>
+              <option value="min">最小值 (min)</option>
+              <option value="count">计数 (count)</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="dataFormat">数据显示格式:</label>
+          <select id="dataFormat">
+            <option value="latest">仅最新值</option>
+            <option value="value">仅数值</option>
+            <option value="all">所有数据点</option>
+            <option value="count">数据点数量</option>
+          </select>
+        </div>
+        
+        <button id="saveConfig" class="btn btn-primary">保存配置</button>
+      </div>
+
+      <!-- API 配置（高级选项，默认折叠） -->
+      <div class="section">
+        <h3 style="cursor: pointer;" onclick="toggleAdvanced()">
+          ⚙️ 高级配置（可选）
+          <span id="advancedToggle" style="font-size: 12px; color: #86909c;">▼</span>
+        </h3>
+        <div id="advancedConfig" style="display: none;">
+          <div class="form-group">
+            <label for="apiUrl">API 地址:</label>
+            <input type="text" id="apiUrl" value="http://localhost:3001" placeholder="API URL">
+            <small class="hint">默认使用代理服务器，避免 CORS 问题</small>
+          </div>
+          <div class="form-group">
+            <label for="authHeader">Authorization Header:</label>
+            <input type="text" id="authHeader" value="Basic dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ==" placeholder="Authorization header value">
+            <small class="hint">格式：Basic [base64编码的用户名:密码]</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 数据拉取操作 -->
+      <div class="section">
+        <h3>开始查询</h3>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="startSync" class="btn btn-success">开始历史数据查询</button>
+          <button id="pauseSync" class="btn" style="background: #ff7d00; color: white;" disabled>暂停</button>
+          <button id="resumeSync" class="btn" style="background: #00b42a; color: white;" disabled>继续</button>
+          <button id="stopSync" class="btn btn-danger" disabled>停止</button>
+        </div>
+        <div style="margin-top: 12px; padding: 12px; background: #f7f8fa; border-radius: 4px; font-size: 13px;">
+          <div style="color: #86909c; margin-bottom: 4px;">💡 使用提示：</div>
+          <ul style="margin: 0; padding-left: 20px; color: #4e5969;">
+            <li><strong>暂停</strong>：在同步过程中可随时暂停，进度会自动保存</li>
+            <li><strong>继续</strong>：暂停后可更换目标表格，点击继续从上次进度开始</li>
+            <li><strong>停止</strong>：完全停止同步并清除进度，需要重新开始</li>
+            <li><strong>自动恢复</strong>：刷新页面后会自动加载未完成的任务</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 进度显示 -->
+      <div class="section">
+        <div class="progress-info">
+          <div>状态: <span id="status">就绪</span></div>
+          <div>进度: <span id="progress">0/0</span></div>
+          <div>成功: <span id="successCount">0</span></div>
+          <div>失败: <span id="failCount">0</span></div>
+        </div>
+        <div id="logContainer" class="log-container"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./main.js"></script>
+  <script>
+    // 切换高级配置显示
+    function toggleAdvanced() {
+      const config = document.getElementById('advancedConfig');
+      const toggle = document.getElementById('advancedToggle');
+      if (config.style.display === 'none') {
+        config.style.display = 'block';
+        toggle.textContent = '▲';
+      } else {
+        config.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    }
+  </script>
+</body>
+</html>
