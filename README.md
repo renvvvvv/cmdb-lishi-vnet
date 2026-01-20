@@ -74,18 +74,7 @@ npm run dev
 3. 设置时间范围
 4. 点击"开始历史数据查询"
 
-## ⚙️ 默认配置
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| 数据源表格 | 当前表格 | 读取测点ID的表格 |
-| App ID | cli_a8495c3aba10d00b | 飞书机器人ID |
-| App Secret | 2jyb2v28yXHPeKW2IuIqPlwyigTP66uq | 飞书机器人密钥 |
-| 测点列名 | 测点 | 包含测点ID的列名 |
-| 时间间隔 | 3600秒 | 1小时 |
-| API地址 | http://localhost:3001 | 代理服务器 |
-| 聚合函数 | 无 | 可选：avg, sum, max, min, count |
-| 数据格式 | 仅最新值 | 可选：仅数值、所有数据点、数据点数量 |
 
 ## 📊 输出格式
 
@@ -352,47 +341,7 @@ npm run proxy
 - 写入延时：200ms（避免表格限流）
 - 进度保存：每10条记录
 
-## 🔐 API 配置
 
-### 请求格式
-
-```bash
-POST http://localhost:3001/tsdb/point_data/v2/search
-Authorization: Basic dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ==
-Content-Type: application/json
-
-{
-  "startTime": 1765239798223,
-  "endTime": 1765243398223,
-  "interval": "3600",
-  "function": "avg",
-  "pointList": ["29.125073.1.1.8.1.1.1.2.1"]
-}
-```
-
-### 响应格式
-
-```json
-{
-  "code": 200,
-  "msg": "查询成功",
-  "success": true,
-  "data": {
-    "29.125073.1.1.8.1.1.1.2.1": [
-      {"timestamp": 1765239798223, "value": 22.5},
-      {"timestamp": 1765240398223, "value": 23.1},
-      {"timestamp": 1765240998223, "value": 22.8}
-    ]
-  }
-}
-```
-
-### 认证信息
-
-```
-用户名: technique_center
-密码: 21Vianet@Vnet.com
-Base64: dGVjaG5pcXVlX2NlbnRlcjoyMVZpYW5ldEBWbmV0LmNvbQ==
 ```
 
 ## 🎯 最佳实践
